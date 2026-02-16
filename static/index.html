@@ -1,0 +1,684 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#0f0f1a">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="manifest" href="/static/manifest.json">
+<link rel="apple-touch-icon" href="/static/icon-192.png">
+<title>English Morning Call ☀️</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  background: #0f0f1a;
+  color: #fff;
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+/* --- Sections --- */
+.page { display: none; width: 100%; max-width: 480px; padding: 24px; flex-direction: column; align-items: center; }
+.page.active { display: flex; }
+
+/* --- Main Screen --- */
+#mainPage { gap: 20px; justify-content: center; min-height: 100dvh; }
+h1 { font-size: 24px; font-weight: 700; }
+.subtitle { color: #888; font-size: 14px; }
+
+.streak-badge { font-size: 16px; color: #f59e0b; font-weight: 600; }
+.topic-card {
+  background: #1a1a2e; border-radius: 16px; padding: 16px;
+  width: 100%; text-align: center;
+}
+.topic-card .label { font-size: 12px; color: #888; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px; }
+.topic-card .topic-text { font-size: 15px; color: #c4b5fd; line-height: 1.4; }
+
+.review-card {
+  background: #1a1a2e; border-radius: 16px; padding: 16px; width: 100%;
+}
+.review-card .label { font-size: 12px; color: #888; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px; }
+.review-card .expressions { display: flex; flex-wrap: wrap; gap: 8px; }
+.review-card .expr-tag {
+  background: #2d2454; color: #a78bfa; padding: 6px 12px;
+  border-radius: 20px; font-size: 13px;
+}
+
+.timer {
+  font-size: 48px; font-weight: 200; font-variant-numeric: tabular-nums;
+  letter-spacing: 2px; display: none;
+}
+.status-ring {
+  width: 180px; height: 180px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  position: relative; transition: all 0.3s;
+}
+.status-ring::before {
+  content: ''; position: absolute; inset: 0; border-radius: 50%;
+  border: 3px solid #333; transition: all 0.3s;
+}
+.status-ring.listening::before { border-color: #4ade80; box-shadow: 0 0 30px rgba(74,222,128,0.3); }
+.status-ring.speaking::before { border-color: #818cf8; box-shadow: 0 0 30px rgba(129,140,248,0.3); animation: pulse 1s ease-in-out infinite; }
+@keyframes pulse { 0%,100%{transform:scale(1)} 50%{transform:scale(1.05)} }
+.status-label { font-size: 16px; color: #888; font-weight: 500; }
+.status-ring.listening .status-label { color: #4ade80; }
+.status-ring.speaking .status-label { color: #818cf8; }
+
+.btn-primary {
+  width: 200px; height: 56px; border: none; border-radius: 28px;
+  background: linear-gradient(135deg, #818cf8, #6366f1);
+  color: #fff; font-size: 18px; font-weight: 600; cursor: pointer; transition: all 0.2s;
+}
+.btn-primary:active { transform: scale(0.95); }
+.btn-primary:disabled { opacity: 0.5; cursor: default; }
+#btnEnd {
+  width: 120px; height: 44px; border: 2px solid #ef4444; border-radius: 22px;
+  background: transparent; color: #ef4444; font-size: 16px; font-weight: 600;
+  cursor: pointer; display: none;
+}
+#btnEnd:active { transform: scale(0.95); }
+.transcript-live {
+  max-height: 100px; overflow-y: auto; font-size: 13px;
+  color: #888; text-align: center; line-height: 1.5; padding: 0 16px; display: none;
+}
+.nav-link { color: #818cf8; font-size: 14px; cursor: pointer; margin-top: 8px; }
+.nav-link:hover { text-decoration: underline; }
+
+/* --- Summary Screen --- */
+#summaryPage { gap: 20px; padding-top: 40px; padding-bottom: 40px; }
+.score-circle {
+  width: 120px; height: 120px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 48px; font-weight: 700;
+  border: 4px solid;
+}
+.score-green { border-color: #4ade80; color: #4ade80; }
+.score-yellow { border-color: #fbbf24; color: #fbbf24; }
+.score-red { border-color: #ef4444; color: #ef4444; }
+
+.feedback-section { width: 100%; }
+.feedback-section h3 { font-size: 14px; color: #888; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 12px; }
+
+.grammar-card {
+  background: #1a1a2e; border-radius: 12px; padding: 14px; margin-bottom: 10px;
+}
+.grammar-wrong { color: #ef4444; font-size: 14px; text-decoration: line-through; }
+.grammar-correct { color: #4ade80; font-size: 14px; font-weight: 600; margin-top: 4px; }
+.grammar-explain { color: #888; font-size: 12px; margin-top: 4px; }
+
+.expr-good { display: inline-block; background: #064e3b; color: #4ade80; padding: 6px 14px; border-radius: 20px; font-size: 13px; margin: 4px; }
+.expr-key { display: inline-block; background: #2d2454; color: #c4b5fd; padding: 6px 14px; border-radius: 20px; font-size: 13px; margin: 4px; }
+
+.level-badge {
+  display: inline-block; padding: 6px 16px; border-radius: 20px;
+  font-size: 13px; font-weight: 600; text-transform: uppercase;
+}
+.level-beginner { background: #1e3a5f; color: #60a5fa; }
+.level-intermediate { background: #3b2f0a; color: #fbbf24; }
+.level-advanced { background: #2d1a0a; color: #f97316; }
+
+.tip-box {
+  background: #1a1a2e; border-left: 3px solid #818cf8;
+  padding: 14px; border-radius: 0 12px 12px 0; font-size: 14px;
+  color: #c4b5fd; line-height: 1.5; width: 100%;
+}
+
+.btn-row { display: flex; gap: 12px; margin-top: 8px; }
+.btn-secondary {
+  padding: 12px 24px; border-radius: 24px; border: 2px solid #333;
+  background: transparent; color: #fff; font-size: 14px; font-weight: 600; cursor: pointer;
+}
+.btn-secondary:active { transform: scale(0.95); }
+
+.loading-spinner {
+  display: flex; flex-direction: column; align-items: center; gap: 16px; padding: 60px 0;
+}
+.spinner {
+  width: 48px; height: 48px; border: 3px solid #333; border-top-color: #818cf8;
+  border-radius: 50%; animation: spin 0.8s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* --- History Screen --- */
+#historyPage { gap: 16px; padding-top: 24px; padding-bottom: 40px; align-items: stretch; }
+.history-header { display: flex; align-items: center; justify-content: space-between; }
+.history-header h2 { font-size: 20px; }
+.back-btn { color: #818cf8; font-size: 14px; cursor: pointer; background:none; border:none; }
+
+.stats-row { display: flex; gap: 10px; }
+.stat-card {
+  flex: 1; background: #1a1a2e; border-radius: 12px; padding: 12px; text-align: center;
+}
+.stat-card .val { font-size: 22px; font-weight: 700; color: #818cf8; }
+.stat-card .lbl { font-size: 11px; color: #888; margin-top: 4px; }
+
+.streak-cal { display: flex; gap: 4px; flex-wrap: wrap; justify-content: center; padding: 8px 0; }
+.streak-day {
+  width: 28px; height: 28px; border-radius: 6px; background: #1a1a2e;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 10px; color: #555;
+}
+.streak-day.active { background: #4ade80; color: #000; font-weight: 600; }
+.streak-day.today { border: 2px solid #818cf8; }
+
+.session-item {
+  background: #1a1a2e; border-radius: 12px; padding: 14px; cursor: pointer;
+  transition: background 0.2s;
+}
+.session-item:active { background: #252540; }
+.session-item .si-top { display: flex; justify-content: space-between; align-items: center; }
+.session-item .si-date { font-size: 14px; font-weight: 600; }
+.session-item .si-score { font-size: 18px; font-weight: 700; }
+.si-score.sg { color: #4ade80; } .si-score.sy { color: #fbbf24; } .si-score.sr { color: #ef4444; }
+.session-item .si-bottom { display: flex; gap: 12px; margin-top: 6px; font-size: 12px; color: #888; }
+
+/* --- Detail Modal --- */
+.modal-overlay {
+  display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.8);
+  z-index: 100; justify-content: center; align-items: flex-start;
+  padding: 24px; overflow-y: auto;
+}
+.modal-overlay.active { display: flex; }
+.modal-content {
+  background: #0f0f1a; border-radius: 16px; padding: 24px;
+  width: 100%; max-width: 480px; margin-top: 20px;
+}
+.modal-close { float: right; background:none; border:none; color:#888; font-size:24px; cursor:pointer; }
+</style>
+</head>
+<body>
+
+<!-- ============ MAIN PAGE ============ -->
+<div class="page active" id="mainPage">
+  <h1>☀️ English Morning Call</h1>
+  <p class="subtitle">Practice English conversation with AI</p>
+  <div class="streak-badge" id="streakBadge" style="display:none">🔥 <span id="streakCount">0</span> day streak</div>
+  
+  <div class="topic-card" id="topicCard" style="display:none">
+    <div class="label">Today's Suggested Topic</div>
+    <div class="topic-text" id="topicText"></div>
+  </div>
+
+  <div class="review-card" id="reviewCard" style="display:none">
+    <div class="label">Review from last session</div>
+    <div class="expressions" id="reviewExpressions"></div>
+  </div>
+
+  <div class="timer" id="timer">00:00</div>
+  <div class="status-ring" id="statusRing">
+    <span class="status-label" id="statusLabel">Tap to start</span>
+  </div>
+  <button class="btn-primary" id="btnStart">Start Conversation</button>
+  <button id="btnEnd">End</button>
+  <div class="transcript-live" id="transcriptLive"></div>
+  <span class="nav-link" id="goHistory">📊 View History</span>
+</div>
+
+<!-- ============ SUMMARY PAGE ============ -->
+<div class="page" id="summaryPage">
+  <div class="loading-spinner" id="summaryLoading">
+    <div class="spinner"></div>
+    <div style="color:#888">Analyzing your conversation...</div>
+  </div>
+  <div id="summaryContent" style="display:none; width:100%; display:none; flex-direction:column; align-items:center; gap:20px;">
+    <h2>Session Complete! 🎉</h2>
+    <div class="score-circle" id="scoreCircle"><span id="scoreNum"></span></div>
+    
+    <div class="feedback-section" id="grammarSection">
+      <h3>📝 Grammar Corrections</h3>
+      <div id="grammarList"></div>
+    </div>
+
+    <div class="feedback-section" id="goodExprSection">
+      <h3>✨ Good Expressions</h3>
+      <div id="goodExprList"></div>
+    </div>
+
+    <div class="feedback-section">
+      <h3>🎯 Vocabulary Level</h3>
+      <span class="level-badge" id="levelBadge"></span>
+    </div>
+
+    <div class="feedback-section">
+      <h3>🔑 Key Expressions to Remember</h3>
+      <div id="keyExprList"></div>
+    </div>
+
+    <div class="feedback-section">
+      <h3>💡 Tip for Next Time</h3>
+      <div class="tip-box" id="tipBox"></div>
+    </div>
+
+    <div class="btn-row">
+      <button class="btn-primary" style="width:auto; padding:0 28px;" id="btnAgain">Practice Again</button>
+      <button class="btn-secondary" id="btnToHistory">View History</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ HISTORY PAGE ============ -->
+<div class="page" id="historyPage">
+  <div class="history-header">
+    <h2>📊 History</h2>
+    <button class="back-btn" id="backFromHistory">← Back</button>
+  </div>
+  
+  <div class="stats-row" id="statsRow">
+    <div class="stat-card"><div class="val" id="statSessions">0</div><div class="lbl">Sessions</div></div>
+    <div class="stat-card"><div class="val" id="statMinutes">0</div><div class="lbl">Minutes</div></div>
+    <div class="stat-card"><div class="val" id="statStreak">0</div><div class="lbl">🔥 Streak</div></div>
+    <div class="stat-card"><div class="val" id="statAvg">0</div><div class="lbl">Avg Score</div></div>
+  </div>
+
+  <div class="streak-cal" id="streakCal"></div>
+  <div id="sessionList"></div>
+</div>
+
+<!-- ============ DETAIL MODAL ============ -->
+<div class="modal-overlay" id="detailModal">
+  <div class="modal-content" id="detailContent">
+    <button class="modal-close" id="closeModal">×</button>
+    <div id="detailBody"></div>
+  </div>
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+
+// ---- Navigation ----
+function showPage(id) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  $(id).classList.add('active');
+}
+
+$('goHistory').onclick = () => { showPage('historyPage'); loadHistory(); };
+$('backFromHistory').onclick = () => showPage('mainPage');
+$('btnAgain').onclick = () => { showPage('mainPage'); };
+$('btnToHistory').onclick = () => { showPage('historyPage'); loadHistory(); };
+$('closeModal').onclick = () => $('detailModal').classList.remove('active');
+
+// ---- Main Page: load stats + topic on start ----
+async function loadMainPageData() {
+  try {
+    const [statsRes, topicRes, histRes] = await Promise.all([
+      fetch('/api/stats'), fetch('/api/next-topic'), fetch('/api/history')
+    ]);
+    const stats = await statsRes.json();
+    const topic = await topicRes.json();
+    const history = await histRes.json();
+
+    if (stats.current_streak > 0) {
+      $('streakBadge').style.display = '';
+      $('streakCount').textContent = stats.current_streak;
+    }
+    if (topic.topic) {
+      $('topicCard').style.display = '';
+      $('topicText').textContent = topic.topic;
+    }
+    if (history.length > 0) {
+      const last = history[history.length - 1];
+      if (last.key_expressions && last.key_expressions.length) {
+        $('reviewCard').style.display = '';
+        $('reviewExpressions').innerHTML = last.key_expressions.map(e => `<span class="expr-tag">${e}</span>`).join('');
+      }
+    }
+  } catch(e) { console.log('Main data load:', e); }
+}
+loadMainPageData();
+
+// ---- Conversation (preserved from original) ----
+let ws, audioCtx, micStream, workletNode, startTime, timerInterval;
+let playbackQueue = [], isPlaying = false;
+let conversationTranscript = [];
+let userSpeechRecognition = null;
+
+function startTimer() {
+  startTime = Date.now();
+  $('timer').style.display = 'block';
+  timerInterval = setInterval(() => {
+    const s = Math.floor((Date.now() - startTime) / 1000);
+    $('timer').textContent = `${String(Math.floor(s/60)).padStart(2,'0')}:${String(s%60).padStart(2,'0')}`;
+  }, 1000);
+}
+function stopTimer() { clearInterval(timerInterval); }
+
+let playCtx = null;
+function getPlayCtx() {
+  if (!playCtx || playCtx.state === 'closed') playCtx = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 24000 });
+  if (playCtx.state === 'suspended') playCtx.resume();
+  return playCtx;
+}
+
+function enqueueAudio(pcmBytes) {
+  playbackQueue.push(pcmBytes);
+  if (!isPlaying) playNext();
+}
+
+function playNext() {
+  if (!playbackQueue.length) { isPlaying = false; setStatus('listening'); return; }
+  isPlaying = true; setStatus('speaking');
+  const pcm = playbackQueue.shift();
+  const samples = new Int16Array(pcm.buffer, pcm.byteOffset, pcm.byteLength / 2);
+  const float32 = new Float32Array(samples.length);
+  for (let i = 0; i < samples.length; i++) float32[i] = samples[i] / 32768;
+  const ctx = getPlayCtx();
+  const buf = ctx.createBuffer(1, float32.length, 24000);
+  buf.getChannelData(0).set(float32);
+  const src = ctx.createBufferSource();
+  src.buffer = buf; src.connect(ctx.destination);
+  src.onended = playNext; src.start();
+}
+
+function setStatus(s) {
+  $('statusRing').className = 'status-ring ' + s;
+  $('statusLabel').textContent = s === 'listening' ? '🎙 Listening...' : s === 'speaking' ? '🔊 Speaking...' : 'Tap to start';
+}
+
+// Browser-side speech recognition for user transcript
+function startSpeechRecognition() {
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SR) return;
+  userSpeechRecognition = new SR();
+  userSpeechRecognition.continuous = true;
+  userSpeechRecognition.interimResults = false;
+  userSpeechRecognition.lang = 'en-US';
+  userSpeechRecognition.onresult = (e) => {
+    for (let i = e.resultIndex; i < e.results.length; i++) {
+      if (e.results[i].isFinal) {
+        const text = e.results[i][0].transcript.trim();
+        if (text && ws && ws.readyState === WebSocket.OPEN) {
+          ws.send(JSON.stringify({ type: 'user_transcript', text }));
+          conversationTranscript.push({ role: 'user', text });
+        }
+      }
+    }
+  };
+  userSpeechRecognition.onerror = (e) => { if (e.error !== 'aborted') console.log('STT error:', e.error); };
+  userSpeechRecognition.onend = () => {
+    // Restart if still in session
+    if (ws && ws.readyState === WebSocket.OPEN) {
+      try { userSpeechRecognition.start(); } catch(e) {}
+    }
+  };
+  try { userSpeechRecognition.start(); } catch(e) {}
+}
+
+function stopSpeechRecognition() {
+  if (userSpeechRecognition) {
+    try { userSpeechRecognition.abort(); } catch(e) {}
+    userSpeechRecognition = null;
+  }
+}
+
+async function setupMic() {
+  audioCtx = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 16000 });
+  await audioCtx.resume();
+  const workletCode = `
+class PcmProcessor extends AudioWorkletProcessor {
+  process(inputs) {
+    const input = inputs[0];
+    if (input.length > 0) {
+      const float32 = input[0];
+      const int16 = new Int16Array(float32.length);
+      for (let i = 0; i < float32.length; i++) {
+        let s = Math.max(-1, Math.min(1, float32[i]));
+        int16[i] = s < 0 ? s * 0x8000 : s * 0x7FFF;
+      }
+      this.port.postMessage(int16.buffer, [int16.buffer]);
+    }
+    return true;
+  }
+}
+registerProcessor('pcm-processor', PcmProcessor);`;
+  const blob = new Blob([workletCode], { type: 'application/javascript' });
+  const url = URL.createObjectURL(blob);
+  await audioCtx.audioWorklet.addModule(url);
+  URL.revokeObjectURL(url);
+  micStream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true, sampleRate: 16000 } });
+  const source = audioCtx.createMediaStreamSource(micStream);
+  workletNode = new AudioWorkletNode(audioCtx, 'pcm-processor');
+  workletNode.port.onmessage = (e) => {
+    if (ws && ws.readyState === WebSocket.OPEN) ws.send(new Uint8Array(e.data));
+  };
+  source.connect(workletNode);
+  workletNode.connect(audioCtx.destination);
+}
+
+function connectWS() {
+  const proto = location.protocol === 'https:' ? 'wss:' : 'ws:';
+  ws = new WebSocket(`${proto}//${location.host}/ws`);
+  ws.binaryType = 'arraybuffer';
+  ws.onmessage = (e) => {
+    if (e.data instanceof ArrayBuffer) {
+      enqueueAudio(new Uint8Array(e.data));
+    } else {
+      const msg = JSON.parse(e.data);
+      if (msg.type === 'status' && msg.message === 'ready') setStatus('listening');
+      else if (msg.type === 'transcript') {
+        $('transcriptLive').style.display = 'block';
+        $('transcriptLive').textContent = msg.text;
+        if (msg.role === 'ai') conversationTranscript.push({ role: 'ai', text: msg.text });
+      }
+      else if (msg.type === 'turn_complete') setStatus('listening');
+      else if (msg.type === 'full_transcript') {
+        // Merge server transcript (may have more complete AI parts)
+        // We keep our local version which also has user STT
+      }
+      else if (msg.type === 'error') $('statusLabel').textContent = '⚠️ ' + msg.message;
+    }
+  };
+  ws.onclose = () => { if ($('btnEnd').style.display !== 'none') stop(true); };
+  ws.onerror = () => { stop(true); };
+}
+
+async function start() {
+  $('btnStart').disabled = true;
+  $('statusLabel').textContent = 'Connecting...';
+  conversationTranscript = [];
+  try {
+    await setupMic();
+    connectWS();
+    startSpeechRecognition();
+    $('btnStart').style.display = 'none';
+    $('btnEnd').style.display = 'inline-block';
+    $('topicCard').style.display = 'none';
+    $('reviewCard').style.display = 'none';
+    $('streakBadge').style.display = 'none';
+    $('goHistory').style.display = 'none';
+    startTimer();
+  } catch (err) {
+    $('statusLabel').textContent = '⚠️ ' + err.message;
+    $('btnStart').disabled = false;
+  }
+}
+
+async function stop(unexpected) {
+  stopTimer();
+  stopSpeechRecognition();
+  const duration = startTime ? Math.floor((Date.now() - startTime) / 1000) : 0;
+  if (ws && ws.readyState === WebSocket.OPEN) {
+    ws.send(JSON.stringify({ type: 'stop' }));
+    ws.close();
+  }
+  ws = null;
+  if (micStream) { micStream.getTracks().forEach(t => t.stop()); micStream = null; }
+  if (workletNode) { workletNode.disconnect(); workletNode = null; }
+  if (audioCtx) { audioCtx.close(); audioCtx = null; }
+  playbackQueue = []; isPlaying = false;
+  
+  $('btnStart').style.display = 'inline-block';
+  $('btnStart').disabled = false;
+  $('btnEnd').style.display = 'none';
+  $('goHistory').style.display = '';
+  $('timer').style.display = 'none';
+  $('transcriptLive').style.display = 'none';
+  setStatus('');
+
+  if (!unexpected && conversationTranscript.length > 0) {
+    showFeedback(conversationTranscript, duration);
+  } else {
+    $('statusLabel').textContent = unexpected ? 'Disconnected' : 'Conversation ended';
+    loadMainPageData();
+  }
+}
+
+// ---- Feedback / Summary ----
+async function showFeedback(transcript, duration) {
+  showPage('summaryPage');
+  $('summaryLoading').style.display = 'flex';
+  $('summaryContent').style.display = 'none';
+
+  try {
+    const res = await fetch('/api/feedback', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ transcript, duration })
+    });
+    const fb = await res.json();
+    renderFeedback(fb);
+  } catch(e) {
+    $('summaryLoading').innerHTML = `<div style="color:#ef4444">Error: ${e.message}</div>`;
+  }
+}
+
+function renderFeedback(fb) {
+  $('summaryLoading').style.display = 'none';
+  $('summaryContent').style.display = 'flex';
+
+  const score = fb.score || 0;
+  $('scoreNum').textContent = score;
+  const cls = score > 7 ? 'score-green' : score > 4 ? 'score-yellow' : 'score-red';
+  $('scoreCircle').className = 'score-circle ' + cls;
+
+  // Grammar
+  const grammar = fb.grammar || [];
+  if (grammar.length) {
+    $('grammarSection').style.display = '';
+    $('grammarList').innerHTML = grammar.map(g => `
+      <div class="grammar-card">
+        <div class="grammar-wrong">✗ ${esc(g.wrong)}</div>
+        <div class="grammar-correct">✓ ${esc(g.correct)}</div>
+        <div class="grammar-explain">${esc(g.explanation)}</div>
+      </div>`).join('');
+  } else {
+    $('grammarSection').style.display = 'none';
+  }
+
+  // Good expressions
+  const good = fb.good_expressions || [];
+  $('goodExprList').innerHTML = good.length
+    ? good.map(e => `<span class="expr-good">${esc(e)}</span>`).join('')
+    : '<span style="color:#888">Keep practicing!</span>';
+
+  // Level
+  const level = (fb.vocabulary_level || 'intermediate').toLowerCase();
+  $('levelBadge').textContent = level;
+  $('levelBadge').className = 'level-badge level-' + level;
+
+  // Key expressions
+  const keys = fb.key_expressions || [];
+  $('keyExprList').innerHTML = keys.map(e => `<span class="expr-key">${esc(e)}</span>`).join('');
+
+  // Tip
+  $('tipBox').textContent = fb.tip || '';
+}
+
+function esc(s) { const d = document.createElement('div'); d.textContent = s || ''; return d.innerHTML; }
+
+// ---- History ----
+async function loadHistory() {
+  try {
+    const [statsRes, histRes] = await Promise.all([fetch('/api/stats'), fetch('/api/history')]);
+    const stats = await statsRes.json();
+    const history = await histRes.json();
+
+    $('statSessions').textContent = stats.total_sessions;
+    $('statMinutes').textContent = Math.round(stats.total_minutes);
+    $('statStreak').textContent = stats.current_streak;
+    $('statAvg').textContent = stats.avg_score;
+
+    // Streak calendar (last 28 days)
+    const sessionDates = new Set(history.map(h => h.date ? h.date.slice(0, 10) : ''));
+    const today = new Date();
+    let calHtml = '';
+    for (let i = 27; i >= 0; i--) {
+      const d = new Date(today); d.setDate(d.getDate() - i);
+      const ds = d.toISOString().slice(0, 10);
+      const active = sessionDates.has(ds) ? ' active' : '';
+      const isToday = i === 0 ? ' today' : '';
+      calHtml += `<div class="streak-day${active}${isToday}">${d.getDate()}</div>`;
+    }
+    $('streakCal').innerHTML = calHtml;
+
+    // Session list
+    $('sessionList').innerHTML = history.slice().reverse().map((s, ri) => {
+      const idx = history.length - 1 - ri;
+      const d = s.date ? new Date(s.date) : new Date();
+      const dateStr = d.toLocaleDateString('en', { month: 'short', day: 'numeric', year: 'numeric' });
+      const dur = Math.round((s.duration || 0) / 60);
+      const sc = s.score || 0;
+      const scCls = sc > 7 ? 'sg' : sc > 4 ? 'sy' : 'sr';
+      return `<div class="session-item" onclick="showDetail(${idx})" style="margin-bottom:8px">
+        <div class="si-top"><span class="si-date">${dateStr}</span><span class="si-score ${scCls}">${sc}/10</span></div>
+        <div class="si-bottom"><span>${dur}min</span><span>${esc(s.vocabulary_level || '')}</span><span>${s.grammar_count || 0} corrections</span></div>
+      </div>`;
+    }).join('');
+  } catch(e) { console.log('History error:', e); }
+}
+
+async function showDetail(idx) {
+  $('detailModal').classList.add('active');
+  $('detailBody').innerHTML = '<div class="loading-spinner"><div class="spinner"></div></div>';
+  try {
+    const res = await fetch(`/api/history/${idx}`);
+    const s = await res.json();
+    const fb = s.feedback || {};
+    let html = `<h3 style="margin-bottom:16px">Session Detail</h3>`;
+    html += `<div style="text-align:center;margin-bottom:16px"><span style="font-size:36px;font-weight:700;color:${fb.score>7?'#4ade80':fb.score>4?'#fbbf24':'#ef4444'}">${fb.score || 0}/10</span></div>`;
+    
+    if (fb.grammar && fb.grammar.length) {
+      html += '<h4 style="color:#888;font-size:13px;margin:12px 0 8px">Grammar</h4>';
+      fb.grammar.forEach(g => {
+        html += `<div class="grammar-card"><div class="grammar-wrong">✗ ${esc(g.wrong)}</div><div class="grammar-correct">✓ ${esc(g.correct)}</div><div class="grammar-explain">${esc(g.explanation)}</div></div>`;
+      });
+    }
+    if (fb.good_expressions && fb.good_expressions.length) {
+      html += '<h4 style="color:#888;font-size:13px;margin:12px 0 8px">Good Expressions</h4>';
+      html += fb.good_expressions.map(e => `<span class="expr-good">${esc(e)}</span>`).join('');
+    }
+    if (fb.key_expressions && fb.key_expressions.length) {
+      html += '<h4 style="color:#888;font-size:13px;margin:12px 0 8px">Key Expressions</h4>';
+      html += fb.key_expressions.map(e => `<span class="expr-key">${esc(e)}</span>`).join('');
+    }
+    if (fb.tip) html += `<div class="tip-box" style="margin-top:12px">${esc(fb.tip)}</div>`;
+    
+    // Transcript
+    if (s.transcript && s.transcript.length) {
+      html += '<h4 style="color:#888;font-size:13px;margin:16px 0 8px">Transcript</h4>';
+      html += '<div style="font-size:13px;color:#888;max-height:200px;overflow-y:auto">';
+      s.transcript.forEach(t => {
+        const c = t.role === 'user' ? '#4ade80' : '#818cf8';
+        html += `<div style="margin-bottom:6px"><span style="color:${c};font-weight:600">${t.role === 'user' ? 'You' : 'AI'}:</span> ${esc(t.text)}</div>`;
+      });
+      html += '</div>';
+    }
+    $('detailBody').innerHTML = html;
+  } catch(e) { $('detailBody').innerHTML = `<div style="color:#ef4444">Error loading detail</div>`; }
+}
+
+$('btnStart').addEventListener('click', start);
+$('btnEnd').addEventListener('click', () => stop(false));
+
+// Register Service Worker for PWA
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('/static/sw.js').then(() => console.log('SW registered'));
+}
+</script>
+</body>
+</html>
