@@ -455,6 +455,33 @@ async def get_weekly_report():
     })
 
 
+ALARM_FILE = DATA_DIR / "alarm.json"
+
+
+@app.post("/api/alarm")
+async def save_alarm(request: Request):
+    """Save alarm settings."""
+    body = await request.json()
+    ALARM_FILE.write_text(json.dumps(body, ensure_ascii=False, indent=2))
+    
+    status = "enabled" if body.get("enabled") else "disabled"
+    days_map = {0: "Sun", 1: "Mon", 2: "Tue", 3: "Wed", 4: "Thu", 5: "Fri", 6: "Sat"}
+    days_str = ", ".join(days_map.get(d, "?") for d in sorted(body.get("days", [])))
+    
+    return JSONResponse({
+        "message": f"Alarm {status}: {body.get('time', '06:30')} on {days_str}" if body.get("enabled") else "Alarm disabled",
+        "settings": body
+    })
+
+
+@app.get("/api/alarm")
+async def get_alarm():
+    """Get alarm settings."""
+    if ALARM_FILE.exists():
+        return JSONResponse(json.loads(ALARM_FILE.read_text()))
+    return JSONResponse({"enabled": False, "time": "06:30", "days": [1, 2, 3, 4, 5]})
+
+
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
 if __name__ == "__main__":
